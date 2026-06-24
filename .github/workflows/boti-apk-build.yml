@@ -29,3 +29,11 @@ jobs:
         run: ./gradlew assembleDebug --stacktrace
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Xmx4g"
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boti-debug-apk
+          path: |
+            **/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn

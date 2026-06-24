@@ -34,15 +34,37 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           cat local.properties
+      - name: Set up gradle.properties
+        run: |
+          mkdir -p $HOME/.gradle
+          cat >> $HOME/.gradle/gradle.properties << 'EOF'
+          org.gradle.daemon=false
+          org.gradle.parallel=false
+          org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
       - name: Build APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
         env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Xmx4g"
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g"
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
           APP_ID: "12345"
           APP_HASH: "0123456789abcdef0123456789abcdef"
           JAVA_TOOL_OPTIONS: "-Xmx4g"
-          JAVA_OPTS: "-Xmx4g"
+      - name: Show build log on failure
+        if: failure()
+        run: |
+          echo "=== BUILD LOG ==="
+          cat build.log || true
+          echo "=== GRADLE WRAPPER PROPERTIES ==="
+          cat gradle/wrapper/gradle-wrapper.properties || true
+          echo "=== BUILD.GRADLE ==="
+          cat build.gradle || cat build.gradle.kts || true
+          echo "=== APP BUILD.GRADLE ==="
+          cat app/build.gradle || cat app/build.gradle.kts || true
+          echo "=== SETTINGS.GRADLE ==="
+          cat settings.gradle || cat settings.gradle.kts || true
       - name: List APK outputs
         if: always()
         run: find . -name "*.apk" 2>/dev/null || echo "No APKs found"
@@ -54,3 +76,10 @@ jobs:
           path: |
             **/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore

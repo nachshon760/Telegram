@@ -39,6 +39,8 @@ jobs:
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Xmx4g"
           ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
+          APP_ID: "12345"
+          APP_HASH: "0123456789abcdef0123456789abcdef"
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4

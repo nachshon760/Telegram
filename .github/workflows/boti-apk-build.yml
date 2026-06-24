@@ -22,7 +22,7 @@ jobs:
 
           if [ -n "$INTRO_FILE" ]; then
             if grep -q "Welcome to Telegram" "$INTRO_FILE"; then
-              sed -i 's/Welcome to Telegram/Welcome to Telegram\n עזרה/' "$INTRO_FILE"
+              sed -i 's/Welcome to Telegram/Welcome to Telegram\n \u05E2\u05D6\u05E8\u05D4/' "$INTRO_FILE"
               echo "Patched Welcome to Telegram text in $INTRO_FILE"
             else
               echo "Welcome to Telegram string not found directly in $INTRO_FILE, trying strings.xml"
@@ -34,7 +34,7 @@ jobs:
 
           if [ -n "$STRINGS_FILE" ]; then
             if grep -q "Welcome to Telegram" "$STRINGS_FILE"; then
-              sed -i 's|\(Welcome to Telegram\)</string>|\1</string>\n    <string name="WelcomeHelpSubtitle">עזרה</string>|' "$STRINGS_FILE"
+              sed -i 's|\(Welcome to Telegram\)</string>|\1</string>\n    <string name="WelcomeHelpSubtitle">\u05E2\u05D6\u05E8\u05D4</string>|' "$STRINGS_FILE"
               echo "Added WelcomeHelpSubtitle string to $STRINGS_FILE"
             fi
           fi
@@ -44,9 +44,13 @@ jobs:
 
           if [ -n "$INTRO_LAYOUT" ]; then
             if grep -q "welcome_title\|WelcomeTitle\|intro_title" "$INTRO_LAYOUT"; then
-              sed -i 's|\(android:id="@+id/.*[Tt]itle.*"\)|android:id="@+id/welcome_subtitle"\n            android:layout_width="wrap_content"\n            android:layout_height="wrap_content"\n            android:text="עזרה"\n            android:textSize="16sp"\n            android:gravity="center" />\n        <TextView\n            \1|' "$INTRO_LAYOUT"
+              sed -i 's|\(android:id="@+id/.*[Tt]itle.*"\)|android:id="@+id/welcome_subtitle"\n            android:layout_width="wrap_content"\n            android:layout_height="wrap_content"\n            android:text="\u05E2\u05D6\u05E8\u05D4"\n            android:textSize="16sp"\n            android:gravity="center" \/>\n        <TextView\n            \1|' "$INTRO_LAYOUT"
               echo "Patched intro layout: $INTRO_LAYOUT"
             fi
           fi
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"

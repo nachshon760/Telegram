@@ -44,42 +44,37 @@ jobs:
           android.useAndroidX=true
           android.enableJetifier=true
           EOF
-      - name: Build APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
-        env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs=-Xmx4g"
-          ANDROID_HOME: ${{ env.ANDROID_SDK_ROOT }}
-          APP_ID: "12345"
-          APP_HASH: "0123456789abcdef0123456789abcdef"
-          JAVA_TOOL_OPTIONS: "-Xmx4g"
-      - name: Show build log on failure
-        if: failure()
+      - name: Show project structure
         run: |
-          echo "=== BUILD LOG ==="
-          cat build.log || true
+          echo "=== ROOT FILES ==="
+          ls -la
           echo "=== GRADLE WRAPPER PROPERTIES ==="
           cat gradle/wrapper/gradle-wrapper.properties || true
           echo "=== BUILD.GRADLE ==="
           cat build.gradle || cat build.gradle.kts || true
           echo "=== APP BUILD.GRADLE ==="
-          cat app/build.gradle || cat app/build.gradle.kts || true
+          cat TMessagesProj/build.gradle || cat app/build.gradle || cat app/build.gradle.kts || true
           echo "=== SETTINGS.GRADLE ==="
           cat settings.gradle || cat settings.gradle.kts || true
-      - name: List APK outputs
-        if: always()
-        run: find . -name "*.apk" 2>/dev/null || echo "No APKs found"
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: boti-debug-apk
-          path: |
-            **/build/outputs/apk/debug/*.apk
-          if-no-files-found: warn
-      - name: Upload build log
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-          if-no-files-found: ignore
+      - name: Fix NDK version if needed
+        run: |
+          if [ -f "app/build.gradle" ]; then
+            GRADLE_FILE="app/build.gradle"
+          elif [ -f "TMessagesProj/build.gradle" ]; then
+            GRADLE_FILE="TMessagesProj/build.gradle"
+          else
+            GRADLE_FILE=$(find . -name "build.gradle" | grep -v "^./build.gradle" | grep -v "build/" | head -1)
+          fi
+          echo "Using gradle file: $GRADLE_FILE"
+          if [ -n "$GRADLE_FILE" ] && [ -f "$GRADLE_FILE" ]; then
+            if grep -q "ndkVersion" "$GRADLE_FILE"; then
+              NDK_VERSION=$(grep "ndkVersion" "$GRADLE_FILE" | head -1 | sed 's/.*ndkVersion[[:space:]]*["\x27]\([^"\x27]*\)["\x27].*/\1/')
+              echo "Found NDK version: $NDK_VERSION"
+              if [ -n "$NDK_VERSION" ]; then
+                sdkmanager "ndk;$NDK_VERSION" || true
+              fi
+            fi
+          fi
+      - name: Install NDK
+        run: |
+          sdkmanager "ndk;21.4.7075529" || sdkmanager "ndk;23.1.7779620" || sdk

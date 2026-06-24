@@ -42,6 +42,7 @@ jobs:
           APP_ID: "12345"
           APP_HASH: "0123456789abcdef0123456789abcdef"
           JAVA_TOOL_OPTIONS: "-Xmx4g"
+          JAVA_OPTS: "-Xmx4g"
       - name: List APK outputs
         if: always()
         run: find . -name "*.apk" 2>/dev/null || echo "No APKs found"
